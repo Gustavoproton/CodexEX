@@ -39,21 +39,42 @@ export interface ItemEscopo {
   qtd: number;
 }
 
+const BULLET_RE = /^[\*\-–•▪‣·○]\s+|^\d+[.)]\s+/;
+const HEADER_RE = /:\s*$/;
+
 const LINE_RE =
-  /^\s*(?:(\d+)\s*[xX]?\s*[-–]?\s*)?(.+?)(?:\s*[-–xX]\s*(\d+)\s*(?:un\.?|und\.?|unid\w*)?)?\s*$/;
+  /^\s*(?:(\d+)\s*[xX]?\s*[-–]?\s*)?(.+?)(?:\s*[-–xX:]\s*(\d+)\s*(?:un\.?|und\.?|unid\w*)?)?\s*$/;
 
 export function parseEscopo(texto: string): ItemEscopo[] {
   const itens: ItemEscopo[] = [];
+
   for (const linhaRaw of texto.split(/\r?\n/)) {
-    const linha = linhaRaw.trim();
+    let linha = linhaRaw.trim();
     if (!linha) continue;
+
+    linha = linha.replace(BULLET_RE, "").trim();
+    if (!linha) continue;
+
+    if (HEADER_RE.test(linha) && !/\d/.test(linha)) continue;
+
     const m = LINE_RE.exec(linha);
     if (!m) continue;
-    const desc = (m[2] ?? "").trim().replace(/^[-–]+|[-–]+$/g, "").trim();
+    const desc = (m[2] ?? "").trim().replace(/^[-–:]+|[-–:]+$/g, "").trim();
     const qtdStr = m[1] ?? m[3] ?? "1";
     if (desc) {
       itens.push({ descricaoOriginal: desc, qtd: parseInt(qtdStr, 10) });
     }
   }
-  return itens;
+
+  const agrupados = new Map<string, ItemEscopo>();
+  for (const item of itens) {
+    const chave = item.descricaoOriginal.toLowerCase();
+    const existente = agrupados.get(chave);
+    if (existente) {
+      existente.qtd += item.qtd;
+    } else {
+      agrupados.set(chave, { ...item });
+    }
+  }
+  return [...agrupados.values()];
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginForm() {
@@ -16,72 +17,67 @@ export default function LoginForm() {
     setErro(null);
     setCarregando(true);
 
-    const res = await fetch("/api/auth/callback/credentials", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        email,
-        password,
-        redirect: "false",
-        json: "true",
-      }),
+    const res = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
     });
 
     setCarregando(false);
 
-    if (res.ok) {
+    if (res?.error) {
+      setErro("E-mail ou senha inválidos.");
+    } else {
       const dest = searchParams.get("callbackUrl") || "/dashboard";
       router.push(dest);
       router.refresh();
-    } else {
-      setErro("E-mail ou senha inválidos.");
     }
   }
 
   return (
-    <main style={{ maxWidth: 380, margin: "80px auto", fontFamily: "system-ui, sans-serif" }}>
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>CodexEX</h1>
-      <p style={{ color: "#666", marginBottom: 24 }}>Entre com sua conta da equipe</p>
+    <div className="login-shell">
+      <div className="login-card">
+        <div className="login-mark">C</div>
+        <h1>Entrar no CodexEX</h1>
+        <p className="subtitle">Acesse com sua conta da equipe</p>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <input
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
-        />
-        {erro && <p style={{ color: "crimson", fontSize: 14 }}>{erro}</p>}
-        <button
-          type="submit"
-          disabled={carregando}
-          style={{
-            padding: 10,
-            borderRadius: 6,
-            border: "none",
-            background: "#111",
-            color: "#fff",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          {carregando ? "Entrando..." : "Entrar"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label htmlFor="email">E-mail</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="password">Senha</label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-      <p style={{ color: "#999", fontSize: 13, marginTop: 20 }}>
-        Não tem conta? Peça pra um administrador criar com{" "}
-        <code>npm run criar-usuario</code>.
-      </p>
-    </main>
+          {erro && <p className="error-text">{erro}</p>}
+
+          <button type="submit" className="btn-primary" disabled={carregando}>
+            {carregando && <span className="spinner" />}
+            {carregando ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+
+        <p className="login-hint">
+          Não tem conta? Peça pra um administrador criar com{" "}
+          <code>npm run criar-usuario</code>.
+        </p>
+      </div>
+    </div>
   );
 }

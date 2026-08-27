@@ -8,6 +8,11 @@ if (!uri) {
   );
 }
 
+const OPTIONS = {
+  serverSelectionTimeoutMS: 5000,
+  connectTimeoutMS: 5000,
+};
+
 declare global {
   // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
@@ -17,12 +22,12 @@ let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === "development") {
   if (!global._mongoClientPromise) {
-    const client = new MongoClient(uri);
+    const client = new MongoClient(uri, OPTIONS);
     global._mongoClientPromise = client.connect();
   }
   clientPromise = global._mongoClientPromise;
 } else {
-  const client = new MongoClient(uri);
+  const client = new MongoClient(uri, OPTIONS);
   clientPromise = client.connect();
 }
 

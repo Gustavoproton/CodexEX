@@ -11,6 +11,28 @@ import { getDb } from "@/lib/mongodb";
 const CATALOGO_PATH = path.join(process.cwd(), "data", "catalogo_produtos.xlsx");
 const TEMPLATE_PATH = path.join(process.cwd(), "data", "template_os.xlsx");
 
+function registrarHistorico(dados: {
+  usuario?: string | null;
+  totalItens: number;
+  totalNaoEncontrados: number;
+  arquivos: string[];
+}) {
+  // roda em segundo plano -- NUNCA espera o Mongo pra devolver a resposta.
+  // Se o Mongo estiver lento/indisponível, a geração da planilha continua
+  // funcionando normalmente; só o histórico que pode falhar silenciosamente.
+  getDb()
+    .then((db) =>
+      db.collection("geracoes").insertOne({
+        usuario: dados.usuario,
+        criadoEm: new Date(),
+        totalItens: dados.totalItens,
+        totalNaoEncontrados: dados.totalNaoEncontrados,
+        arquivos: dados.arquivos,
+      })
+    )
+    .catch((e) => console.error("Falha ao gravar histórico no Mongo:", e));
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) {
@@ -48,26 +70,19 @@ export async function POST(req: NextRequest) {
 
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
-  // histórico no Mongo (não bloqueia a resposta se falhar)
-  try {
-    const db = await getDb();
-    await db.collection("geracoes").insertOne({
-      usuario: session.user?.email,
-      criadoEm: new Date(),
-      totalItens: itens.length,
-      totalNaoEncontrados: naoEncontrados.length,
-      arquivos: arquivos.map((a) => a.nomeArquivo),
-    });
-  } catch (e) {
-    console.error("Falha ao gravar histórico no Mongo:", e);
-  }
+  registrarHistorico({
+    usuario: session.user?.email,
+    totalItens: itens.length,
+    totalNaoEncontrados: naoEncontrados.length,
+    arquivos: arquivos.map((a) => a.nomeArquivo),
+  });
 
   return new NextResponse(new Uint8Array(zipBuffer), {
     status: 200,
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": 'attachment; filename="CodexEX.zip"',
-      "X-Resumo": JSON.stringify(resumo),
+      "X-Resumo": encodeURIComponent(JSON.stringify(resumo)),
     },
   });
 }

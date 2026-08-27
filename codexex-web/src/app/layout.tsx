@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body style={{ fontFamily: "system-ui, -apple-system, sans-serif", margin: 0 }}>
         {children}
       </body>

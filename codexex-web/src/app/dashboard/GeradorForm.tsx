@@ -35,7 +35,8 @@ export default function GeradorForm() {
         throw new Error(data.erro || "Falha ao gerar a planilha.");
       }
 
-      setResumo(JSON.parse(res.headers.get("X-Resumo") || "[]"));
+      const resumoHeader = res.headers.get("X-Resumo") || "%5B%5D";
+      setResumo(JSON.parse(decodeURIComponent(resumoHeader)));
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -55,61 +56,48 @@ export default function GeradorForm() {
 
   return (
     <div>
-      <label style={{ fontWeight: 600, display: "block", marginBottom: 8 }}>
-        Cole o escopo da OS (um item por linha):
-      </label>
-      <textarea
-        value={escopo}
-        onChange={(e) => setEscopo(e.target.value)}
-        placeholder={EXEMPLO}
-        rows={12}
-        style={{
-          width: "100%",
-          padding: 12,
-          borderRadius: 8,
-          border: "1px solid #ccc",
-          fontFamily: "monospace",
-          fontSize: 14,
-        }}
-      />
+      <div className="section-label">Escopo da OS</div>
 
-      <div style={{ display: "flex", gap: 12, marginTop: 12, alignItems: "center" }}>
-        <button
-          onClick={gerar}
-          disabled={carregando}
-          style={{
-            padding: "10px 18px",
-            borderRadius: 6,
-            border: "none",
-            background: "#111",
-            color: "#fff",
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+      <div className="console">
+        <textarea
+          value={escopo}
+          onChange={(e) => setEscopo(e.target.value)}
+          placeholder={"Cole aqui a lista de itens, um por linha:\n\n" + EXEMPLO}
+          rows={14}
+        />
+      </div>
+
+      <div className="actions-row">
+        <button onClick={gerar} disabled={carregando} className="btn-primary" style={{ width: "auto" }}>
+          {carregando && <span className="spinner" />}
           {carregando ? "Gerando..." : "Gerar planilhas"}
         </button>
-        <button
-          onClick={() => setEscopo(EXEMPLO)}
-          type="button"
-          style={{ padding: "10px 14px", borderRadius: 6, border: "1px solid #ccc", background: "#fff", cursor: "pointer" }}
-        >
+        <button onClick={() => setEscopo(EXEMPLO)} type="button" className="btn-ghost">
           Usar exemplo
         </button>
       </div>
 
-      {erro && <p style={{ color: "crimson", marginTop: 16 }}>{erro}</p>}
+      {erro && <p className="error-text" style={{ marginTop: 16 }}>{erro}</p>}
 
       {resumo && resumo.length > 0 && (
-        <div style={{ marginTop: 20, padding: 16, background: "#f6f6f6", borderRadius: 8 }}>
-          <strong>Resumo:</strong>
-          <ul>
-            {resumo.map((linha, i) => (
-              <li key={i}>{linha}</li>
-            ))}
-          </ul>
-          <p style={{ color: "#666", fontSize: 13 }}>
-            O topo de cada planilha (Solicitante, Cliente, OS etc.) ficou em branco -&gt; preencher manualmente.
+        <div className="results-wrap">
+          <div className="section-label">Gerado</div>
+          {resumo.map((linha, i) => {
+            const [arquivo, ...resto] = linha.split(" - ");
+            const extensao = (arquivo.split(".").pop() || "xlsx").toUpperCase();
+            return (
+              <div className="ticket" key={i}>
+                <div className="ticket-icon">{extensao.slice(0, 3)}</div>
+                <div>
+                  <div className="ticket-file">{arquivo}</div>
+                  {resto.length > 0 && <div className="ticket-meta">{resto.join(" - ")}</div>}
+                </div>
+              </div>
+            );
+          })}
+          <p className="hint-box">
+            O topo de cada planilha (Solicitante, Cliente, OS etc.) ficou em
+            branco — preencher manualmente antes de emitir a NF.
           </p>
         </div>
       )}

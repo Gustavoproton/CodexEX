@@ -1,9 +1,10 @@
 export function normalizar(texto: string): string {
-  return texto
+  const semAcento = texto
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase()
     .trim();
+  return semAcento.replace(/(\d)\s+([A-Z])/g, "$1$2");
 }
 
 function levenshtein(a: string, b: string): number {
@@ -35,8 +36,12 @@ export function ratio(a: string, b: string): number {
   return ((maxLen - dist) / maxLen) * 100;
 }
 
+const STOPWORDS = new Set([
+  "DE", "DA", "DO", "DAS", "DOS", "E", "COM", "PARA", "EM", "A", "O", "AS", "OS",
+]);
+
 function tokenize(texto: string): string[] {
-  return texto.split(/\s+/).filter(Boolean);
+  return texto.split(/\s+/).filter((t) => t && !STOPWORDS.has(t));
 }
 
 export function tokenSetRatio(a: string, b: string): number {

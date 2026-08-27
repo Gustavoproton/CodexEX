@@ -3,7 +3,8 @@
  * Uso:
  *   npm run criar-usuario -- "Nome da Pessoa" email@empresa.com "senha temporária"
  */
-import "dotenv/config";
+import { config } from "dotenv";
+config({ path: ".env.local" });
 import { MongoClient } from "mongodb";
 import bcrypt from "bcryptjs";
 
