@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const contaCriada = searchParams.get("criado") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -41,6 +43,10 @@ export default function LoginForm() {
         <h1>Entrar no CodexEX</h1>
         <p className="subtitle">Acesse com sua conta da equipe</p>
 
+        {contaCriada && (
+          <p className="success-text">Conta criada! Faça login abaixo.</p>
+        )}
+
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label htmlFor="email">E-mail</label>
@@ -74,8 +80,7 @@ export default function LoginForm() {
         </form>
 
         <p className="login-hint">
-          Não tem conta? Peça pra um administrador criar com{" "}
-          <code>npm run criar-usuario</code>.
+          Não tem conta? <Link href="/signup">Criar conta</Link>
         </p>
       </div>
     </div>
